@@ -1,0 +1,278 @@
+Token indices sequence length is longer than the specified maximum sequence length for this model (260662 > 512). Running this sequence through the model will result in indexing errors
+train window 1/8 collected (7s)
+train window 2/8 collected (14s)
+train window 3/8 collected (20s)
+train window 4/8 collected (27s)
+train window 5/8 collected (34s)
+train window 6/8 collected (40s)
+train window 7/8 collected (47s)
+train window 8/8 collected (53s)
+layer 0: predictor trained on 49152 queries (70s)
+layer 1: predictor trained on 49152 queries (88s)
+layer 2: predictor trained on 49152 queries (106s)
+layer 3: predictor trained on 49152 queries (124s)
+layer 4: predictor trained on 49152 queries (140s)
+layer 5: predictor trained on 49152 queries (156s)
+layer 6: predictor trained on 49152 queries (172s)
+layer 7: predictor trained on 49152 queries (189s)
+layer 8: predictor trained on 49152 queries (206s)
+layer 9: predictor trained on 49152 queries (223s)
+layer 10: predictor trained on 49152 queries (239s)
+layer 11: predictor trained on 49152 queries (256s)
+window 1: full-attention pass done
+SANITY max per-token loss gap vs full: 9.5367431640625e-06
+  w1 FIXED tree b=2 (284s)
+  w1 FIXED tree b=4 (293s)
+  w1 FIXED tree b=8 (302s)
+  w1 FIXED tree b=16 (312s)
+  w1 PRED-Q c=0.03 (322s)
+  w1 PRED-Q c=0.05 (332s)
+  w1 PRED-Q c=0.08 (342s)
+  w1 FLOOR2 c=0.03 (351s)
+  w1 FLOOR2 c=0.05 (361s)
+  w1 FLOOR2 c=0.08 (371s)
+  w1 FLOOR2 c=0.12 (381s)
+  w1 FLOOR3 c=0.03 (391s)
+  w1 FLOOR3 c=0.05 (402s)
+  w1 FLOOR3 c=0.08 (412s)
+  w1 ORACLE-COUNTS(floor2) c=0.03 (419s)
+  w1 ORACLE-COUNTS(floor2) c=0.05 (427s)
+  w1 ORACLE-COUNTS(floor2) c=0.08 (434s)
+window 1/10 done (434s)
+window 2: full-attention pass done
+  w2 FIXED tree b=2 (443s)
+  w2 FIXED tree b=4 (452s)
+  w2 FIXED tree b=8 (461s)
+  w2 FIXED tree b=16 (471s)
+  w2 PRED-Q c=0.03 (482s)
+  w2 PRED-Q c=0.05 (492s)
+  w2 PRED-Q c=0.08 (503s)
+  w2 FLOOR2 c=0.03 (513s)
+  w2 FLOOR2 c=0.05 (523s)
+  w2 FLOOR2 c=0.08 (534s)
+  w2 FLOOR2 c=0.12 (544s)
+  w2 FLOOR3 c=0.03 (555s)
+  w2 FLOOR3 c=0.05 (566s)
+  w2 FLOOR3 c=0.08 (576s)
+  w2 ORACLE-COUNTS(floor2) c=0.03 (584s)
+  w2 ORACLE-COUNTS(floor2) c=0.05 (591s)
+  w2 ORACLE-COUNTS(floor2) c=0.08 (599s)
+window 2/10 done (599s)
+window 3: full-attention pass done
+  w3 FIXED tree b=2 (608s)
+  w3 FIXED tree b=4 (616s)
+  w3 FIXED tree b=8 (626s)
+  w3 FIXED tree b=16 (636s)
+  w3 PRED-Q c=0.03 (646s)
+  w3 PRED-Q c=0.05 (656s)
+  w3 PRED-Q c=0.08 (666s)
+  w3 FLOOR2 c=0.03 (676s)
+  w3 FLOOR2 c=0.05 (686s)
+  w3 FLOOR2 c=0.08 (696s)
+  w3 FLOOR2 c=0.12 (706s)
+  w3 FLOOR3 c=0.03 (716s)
+  w3 FLOOR3 c=0.05 (727s)
+  w3 FLOOR3 c=0.08 (737s)
+  w3 ORACLE-COUNTS(floor2) c=0.03 (744s)
+  w3 ORACLE-COUNTS(floor2) c=0.05 (751s)
+  w3 ORACLE-COUNTS(floor2) c=0.08 (759s)
+window 3/10 done (759s)
+window 4: full-attention pass done
+  w4 FIXED tree b=2 (768s)
+  w4 FIXED tree b=4 (777s)
+  w4 FIXED tree b=8 (786s)
+  w4 FIXED tree b=16 (796s)
+  w4 PRED-Q c=0.03 (806s)
+  w4 PRED-Q c=0.05 (817s)
+  w4 PRED-Q c=0.08 (827s)
+  w4 FLOOR2 c=0.03 (837s)
+  w4 FLOOR2 c=0.05 (848s)
+  w4 FLOOR2 c=0.08 (859s)
+  w4 FLOOR2 c=0.12 (869s)
+  w4 FLOOR3 c=0.03 (880s)
+  w4 FLOOR3 c=0.05 (890s)
+  w4 FLOOR3 c=0.08 (900s)
+  w4 ORACLE-COUNTS(floor2) c=0.03 (908s)
+  w4 ORACLE-COUNTS(floor2) c=0.05 (916s)
+  w4 ORACLE-COUNTS(floor2) c=0.08 (923s)
+window 4/10 done (923s)
+window 5: full-attention pass done
+  w5 FIXED tree b=2 (933s)
+  w5 FIXED tree b=4 (942s)
+  w5 FIXED tree b=8 (951s)
+  w5 FIXED tree b=16 (962s)
+  w5 PRED-Q c=0.03 (972s)
+  w5 PRED-Q c=0.05 (982s)
+  w5 PRED-Q c=0.08 (993s)
+  w5 FLOOR2 c=0.03 (1003s)
+  w5 FLOOR2 c=0.05 (1014s)
+  w5 FLOOR2 c=0.08 (1024s)
+  w5 FLOOR2 c=0.12 (1035s)
+  w5 FLOOR3 c=0.03 (1045s)
+  w5 FLOOR3 c=0.05 (1055s)
+  w5 FLOOR3 c=0.08 (1066s)
+  w5 ORACLE-COUNTS(floor2) c=0.03 (1073s)
+  w5 ORACLE-COUNTS(floor2) c=0.05 (1081s)
+  w5 ORACLE-COUNTS(floor2) c=0.08 (1089s)
+window 5/10 done (1089s)
+window 6: full-attention pass done
+  w6 FIXED tree b=2 (1097s)
+  w6 FIXED tree b=4 (1106s)
+  w6 FIXED tree b=8 (1116s)
+  w6 FIXED tree b=16 (1126s)
+  w6 PRED-Q c=0.03 (1136s)
+  w6 PRED-Q c=0.05 (1146s)
+  w6 PRED-Q c=0.08 (1157s)
+  w6 FLOOR2 c=0.03 (1167s)
+  w6 FLOOR2 c=0.05 (1177s)
+  w6 FLOOR2 c=0.08 (1188s)
+  w6 FLOOR2 c=0.12 (1198s)
+  w6 FLOOR3 c=0.03 (1208s)
+  w6 FLOOR3 c=0.05 (1218s)
+  w6 FLOOR3 c=0.08 (1228s)
+  w6 ORACLE-COUNTS(floor2) c=0.03 (1236s)
+  w6 ORACLE-COUNTS(floor2) c=0.05 (1243s)
+  w6 ORACLE-COUNTS(floor2) c=0.08 (1251s)
+window 6/10 done (1251s)
+window 7: full-attention pass done
+  w7 FIXED tree b=2 (1260s)
+  w7 FIXED tree b=4 (1269s)
+  w7 FIXED tree b=8 (1279s)
+  w7 FIXED tree b=16 (1289s)
+  w7 PRED-Q c=0.03 (1299s)
+  w7 PRED-Q c=0.05 (1309s)
+  w7 PRED-Q c=0.08 (1320s)
+  w7 FLOOR2 c=0.03 (1330s)
+  w7 FLOOR2 c=0.05 (1340s)
+  w7 FLOOR2 c=0.08 (1351s)
+  w7 FLOOR2 c=0.12 (1361s)
+  w7 FLOOR3 c=0.03 (1371s)
+  w7 FLOOR3 c=0.05 (1382s)
+  w7 FLOOR3 c=0.08 (1392s)
+  w7 ORACLE-COUNTS(floor2) c=0.03 (1400s)
+  w7 ORACLE-COUNTS(floor2) c=0.05 (1407s)
+  w7 ORACLE-COUNTS(floor2) c=0.08 (1415s)
+window 7/10 done (1415s)
+window 8: full-attention pass done
+  w8 FIXED tree b=2 (1424s)
+  w8 FIXED tree b=4 (1433s)
+  w8 FIXED tree b=8 (1442s)
+  w8 FIXED tree b=16 (1452s)
+  w8 PRED-Q c=0.03 (1463s)
+  w8 PRED-Q c=0.05 (1473s)
+  w8 PRED-Q c=0.08 (1484s)
+  w8 FLOOR2 c=0.03 (1494s)
+  w8 FLOOR2 c=0.05 (1505s)
+  w8 FLOOR2 c=0.08 (1515s)
+  w8 FLOOR2 c=0.12 (1525s)
+  w8 FLOOR3 c=0.03 (1536s)
+  w8 FLOOR3 c=0.05 (1546s)
+  w8 FLOOR3 c=0.08 (1556s)
+  w8 ORACLE-COUNTS(floor2) c=0.03 (1564s)
+  w8 ORACLE-COUNTS(floor2) c=0.05 (1571s)
+  w8 ORACLE-COUNTS(floor2) c=0.08 (1579s)
+window 8/10 done (1579s)
+window 9: full-attention pass done
+  w9 FIXED tree b=2 (1588s)
+  w9 FIXED tree b=4 (1597s)
+  w9 FIXED tree b=8 (1607s)
+  w9 FIXED tree b=16 (1617s)
+  w9 PRED-Q c=0.03 (1627s)
+  w9 PRED-Q c=0.05 (1638s)
+  w9 PRED-Q c=0.08 (1649s)
+  w9 FLOOR2 c=0.03 (1659s)
+  w9 FLOOR2 c=0.05 (1669s)
+  w9 FLOOR2 c=0.08 (1680s)
+  w9 FLOOR2 c=0.12 (1690s)
+  w9 FLOOR3 c=0.03 (1701s)
+  w9 FLOOR3 c=0.05 (1711s)
+  w9 FLOOR3 c=0.08 (1722s)
+  w9 ORACLE-COUNTS(floor2) c=0.03 (1729s)
+  w9 ORACLE-COUNTS(floor2) c=0.05 (1737s)
+  w9 ORACLE-COUNTS(floor2) c=0.08 (1744s)
+window 9/10 done (1744s)
+window 10: full-attention pass done
+  w10 FIXED tree b=2 (1753s)
+  w10 FIXED tree b=4 (1763s)
+  w10 FIXED tree b=8 (1772s)
+  w10 FIXED tree b=16 (1782s)
+  w10 PRED-Q c=0.03 (1793s)
+  w10 PRED-Q c=0.05 (1803s)
+  w10 PRED-Q c=0.08 (1814s)
+  w10 FLOOR2 c=0.03 (1824s)
+  w10 FLOOR2 c=0.05 (1834s)
+  w10 FLOOR2 c=0.08 (1845s)
+  w10 FLOOR2 c=0.12 (1855s)
+  w10 FLOOR3 c=0.03 (1866s)
+  w10 FLOOR3 c=0.05 (1876s)
+  w10 FLOOR3 c=0.08 (1886s)
+  w10 ORACLE-COUNTS(floor2) c=0.03 (1894s)
+  w10 ORACLE-COUNTS(floor2) c=0.05 (1901s)
+  w10 ORACLE-COUNTS(floor2) c=0.08 (1909s)
+window 10/10 done (1909s)
+windows done: 10/10   masked tokens: 760   N=512   FULL attention MLM loss = 2.073
+
+Table 1: loss increase vs full attention (+/- std error, each vs full), lower = better. Sorted by average keys.
+gain = PAIRED improvement over uniform fixed beams interpolated to the same key count (same tokens; positive = better, +/- is the paired std error).
+n/a = key count outside the fixed-beam range. mass = true attention mass captured.
+beam = average branches per query chosen by the predictor; lifted = fraction of queries the floor raised (for floor=1 it only counts round-to-zero cases).
+ORACLE-COUNTS uses the TRUE best keys with the predictor branch counts: it separates predictor error from tree routing error.
+                      config  keys        delta         gain  mass  top1 beam lifted
+              FIXED tree b=2   8.6 +0.78+/-0.08            - 0.348 0.593    -      -
+               PRED-Q c=0.03  10.7 +0.75+/-0.09 -0.17+/-0.06 0.393 0.603  3.1   0.29
+ORACLE-COUNTS(floor2) c=0.03  10.7 +0.38+/-0.07 +0.20+/-0.07 0.510 0.693  3.6   0.53
+               FLOOR2 c=0.03  11.6 +0.48+/-0.08 +0.02+/-0.06 0.441 0.661  3.6   0.52
+              FIXED tree b=4  12.2 +0.44+/-0.06            - 0.467 0.686    -      -
+               FLOOR3 c=0.03  12.7 +0.37+/-0.06 +0.05+/-0.05 0.475 0.705  4.2   0.62
+ORACLE-COUNTS(floor2) c=0.05  13.6 +0.24+/-0.06 +0.16+/-0.06 0.559 0.751  5.1   0.44
+               PRED-Q c=0.05  13.9 +0.51+/-0.08 -0.12+/-0.06 0.454 0.655  4.7   0.22
+               FLOOR2 c=0.05  14.6 +0.30+/-0.07 +0.07+/-0.06 0.490 0.712  5.1   0.43
+               FLOOR3 c=0.05  15.5 +0.21+/-0.06 +0.13+/-0.05 0.523 0.732  5.7   0.53
+ORACLE-COUNTS(floor2) c=0.08  16.4 +0.16+/-0.05 +0.16+/-0.04 0.598 0.772  6.6   0.35
+               PRED-Q c=0.08  16.9 +0.29+/-0.07 +0.01+/-0.06 0.512 0.711  6.3   0.17
+               FLOOR2 c=0.08  17.4 +0.21+/-0.06 +0.08+/-0.05 0.536 0.743  6.6   0.34
+               FLOOR3 c=0.08  18.2 +0.18+/-0.05 +0.09+/-0.04 0.560 0.763  7.1   0.45
+               FLOOR2 c=0.12  19.5 +0.19+/-0.05 +0.04+/-0.05 0.571 0.786  7.7   0.27
+              FIXED tree b=8  19.7 +0.22+/-0.06            - 0.591 0.743    -      -
+             FIXED tree b=16  35.1 +0.08+/-0.04            - 0.708 0.812    -      -
+
+Table 2: where does each config spend its keys? avg distinct keys per layer
+                                0     1     2     3     4     5     6     7     8     9     10    11
+FIXED tree b=2                 8.7   8.6   8.7   8.6   8.6   8.4   8.3   8.2   8.5   8.7   8.9   8.9
+FIXED tree b=4                12.5  12.3  12.4  12.3  12.2  11.8  11.8  11.6  11.9  12.4  12.7  12.8
+FIXED tree b=8                20.3  20.0  20.1  19.9  19.7  19.2  19.2  18.9  19.3  19.9  19.8  19.9
+FIXED tree b=16               36.0  35.7  35.7  35.4  35.1  34.5  34.6  34.3  34.6  35.2  34.8  34.7
+PRED-Q c=0.03                 17.3  15.8  14.3  12.5  10.4   7.9   7.6   6.7   8.5   9.4   9.4   9.2
+PRED-Q c=0.05                 24.7  22.3  19.6  17.0  13.4   8.9   8.5   6.9  10.1  11.6  11.8  11.6
+PRED-Q c=0.08                 29.1  26.1  24.5  21.9  16.7  10.4   9.9   7.4  12.2  14.5  15.1  14.8
+FLOOR2 c=0.03                 17.4  16.2  14.7  13.1  11.2   9.1   8.8   8.1   9.6  10.2  10.5  10.4
+FLOOR2 c=0.05                 24.7  22.6  20.0  17.5  14.0  10.0   9.6   8.2  10.9  12.2  12.6  12.6
+FLOOR2 c=0.08                 29.2  26.4  24.8  22.3  17.2  11.3  10.8   8.4  12.7  14.9  15.6  15.3
+FLOOR2 c=0.12                 31.4  27.6  27.3  24.5  19.8  12.8  12.2   9.0  14.5  17.7  18.2  18.8
+FLOOR3 c=0.03                 17.8  16.7  15.3  13.8  12.3  10.6  10.3   9.8  10.9  11.4  11.9  11.9
+FLOOR3 c=0.05                 24.9  23.1  20.4  18.2  14.8  11.3  10.9   9.7  12.0  13.1  13.7  13.6
+FLOOR3 c=0.08                 29.2  26.9  25.2  22.9  17.9  12.5  12.0   9.9  13.8  15.6  16.4  16.3
+ORACLE-COUNTS(floor2) c=0.03  17.0  15.3  13.6  11.8  10.1   8.1   7.9   7.2   8.5   8.9  10.0  10.2
+ORACLE-COUNTS(floor2) c=0.05  24.3  21.8  18.8  16.2  12.8   8.9   8.6   7.2   9.7  10.7  12.0  12.2
+ORACLE-COUNTS(floor2) c=0.08  28.7  25.5  23.6  20.9  16.0  10.2   9.8   7.4  11.6  13.3  14.9  15.0
+
+Table 3: per-layer output error vs full attention, lower = better
+                                 0     1     2     3     4     5     6     7     8     9    10    11   avg
+FIXED tree b=2                1.38  1.04  0.89  0.93  0.85  0.76  0.73  0.70  0.78  0.80  1.06  1.10  0.92
+FIXED tree b=4                1.19  0.88  0.80  0.74  0.65  0.53  0.51  0.44  0.58  0.63  0.76  0.89  0.72
+FIXED tree b=8                0.98  0.74  0.67  0.56  0.47  0.34  0.32  0.24  0.38  0.45  0.55  0.69  0.53
+FIXED tree b=16               0.77  0.61  0.53  0.39  0.31  0.19  0.18  0.11  0.22  0.29  0.36  0.47  0.37
+PRED-Q c=0.03                 1.11  0.91  0.78  0.78  0.74  0.70  0.71  0.69  0.77  0.77  1.30  1.65  0.91
+PRED-Q c=0.05                 0.95  0.82  0.68  0.68  0.65  0.63  0.63  0.61  0.69  0.69  1.28  1.59  0.82
+PRED-Q c=0.08                 0.86  0.77  0.61  0.59  0.56  0.55  0.56  0.53  0.60  0.60  1.02  1.32  0.71
+FLOOR2 c=0.03                 1.09  0.87  0.77  0.74  0.68  0.60  0.60  0.57  0.67  0.70  0.97  1.08  0.78
+FLOOR2 c=0.05                 0.94  0.78  0.68  0.63  0.60  0.54  0.54  0.51  0.61  0.65  0.88  1.07  0.70
+FLOOR2 c=0.08                 0.86  0.73  0.61  0.56  0.53  0.49  0.49  0.45  0.55  0.58  0.85  0.98  0.64
+FLOOR2 c=0.12                 0.82  0.71  0.57  0.52  0.48  0.44  0.45  0.41  0.49  0.52  0.70  0.85  0.58
+FLOOR3 c=0.03                 1.06  0.84  0.75  0.69  0.63  0.53  0.53  0.48  0.60  0.65  0.81  0.91  0.71
+FLOOR3 c=0.05                 0.93  0.76  0.67  0.60  0.56  0.47  0.47  0.43  0.55  0.60  0.75  0.88  0.64
+FLOOR3 c=0.08                 0.86  0.71  0.61  0.54  0.51  0.43  0.43  0.39  0.50  0.55  0.68  0.81  0.58
+ORACLE-COUNTS(floor2) c=0.03  1.01  0.78  0.70  0.64  0.59  0.49  0.48  0.41  0.54  0.57  0.71  0.84  0.65
+ORACLE-COUNTS(floor2) c=0.05  0.86  0.69  0.61  0.55  0.51  0.43  0.43  0.37  0.48  0.50  0.64  0.78  0.57
+ORACLE-COUNTS(floor2) c=0.08  0.78  0.64  0.55  0.48  0.45  0.38  0.38  0.33  0.43  0.44  0.58  0.72  0.51
+ALL DONE
