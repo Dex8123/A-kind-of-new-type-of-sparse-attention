@@ -1,0 +1,296 @@
+import numpy as np, pandas as pd, time, os, torch
+from collections import defaultdict
+OUT = '.'
+
+N = 512; N_WINDOWS = 10; MASK_FRAC = 0.15; LOCAL = 1
+N_TRAIN_WINDOWS = 8
+FIXED_BEAMS = [2, 4, 8, 16]
+WMAX = 16
+KM_ITERS = 5
+D = int(np.log2(N // 2))
+
+CONFIGS = [dict(name=f'FIXED tree b={b}', method='fixed', beam=b) for b in FIXED_BEAMS]
+for c in [0.03, 0.05, 0.08]:
+    CONFIGS.append(dict(name=f'PRED-Q c={c}', method='pred', c=c, floor=1))
+for c in [0.03, 0.05, 0.08, 0.12]:
+    CONFIGS.append(dict(name=f'FLOOR2 c={c}', method='pred', c=c, floor=2))
+for c in [0.03, 0.05, 0.08]:
+    CONFIGS.append(dict(name=f'FLOOR3 c={c}', method='pred', c=c, floor=3))
+for c in [0.03, 0.05, 0.08]:
+    CONFIGS.append(dict(name=f'ORACLE-COUNTS(floor2) c={c}', method='oraclecount', c=c, floor=2))
+
+def two_means_order(X):
+    a = np.take_along_axis(X, ((X - X.mean(2, keepdims=True)) ** 2).sum(-1).argmax(-1)[..., None, None], 2)
+    b = np.take_along_axis(X, ((X - a) ** 2).sum(-1).argmax(-1)[..., None, None], 2)
+    c = np.concatenate([a, b], 2)
+    xx = (X ** 2).sum(-1)[..., None]
+    for _ in range(KM_ITERS):
+        dist = xx - 2 * np.einsum('hgsd,hgcd->hgsc', X, c) + (c ** 2).sum(-1)[:, :, None, :]
+        lab = dist.argmin(-1)
+        for j in (0, 1):
+            m = (lab == j)[..., None].astype(X.dtype); cnt = m.sum(2, keepdims=True)
+            newc = (X * m).sum(2, keepdims=True) / np.maximum(cnt, 1)
+            c[:, :, j:j + 1] = np.where(cnt > 0, newc, c[:, :, j:j + 1])
+    return np.argsort(np.einsum('hgsd,hgd->hgs', X, c[:, :, 0] - c[:, :, 1]), -1)
+
+def build_tree(k):
+    H_, n, DH_ = k.shape
+    perm = np.tile(np.arange(n), (H_, 1)); sums = [k.sum(1, keepdims=True)]
+    for lvl in range(D):
+        G = 2 ** lvl; S = n // G
+        Xg = np.take_along_axis(k, perm[..., None], 1).reshape(H_, G, S, DH_)
+        order = two_means_order(Xg)
+        perm = np.take_along_axis(perm.reshape(H_, G, S), order, 2).reshape(H_, n)
+        kp = np.take_along_axis(k, perm[..., None], 1).reshape(H_, 2 * G, S // 2, DH_)
+        sums.append(kp.sum(2))
+    return perm, sums
+
+def tree_candidates(q, perm, sums, beam):
+    H_, n, DH_ = q.shape; hi = np.arange(H_)[:, None, None]
+    front = np.zeros((H_, n, 1), dtype=np.int64)
+    for lvl in range(1, D + 1):
+        ch = np.concatenate([2 * front, 2 * front + 1], -1)
+        U = sums[lvl][hi, ch]
+        sc = np.einsum('hnd,hnkd->hnk', q, U)
+        order = np.argsort(-sc, -1)
+        front = np.take_along_axis(ch, order[..., :min(beam, ch.shape[-1])], -1)
+    pos = np.concatenate([2 * front, 2 * front + 1], -1)
+    return perm[hi, pos]
+
+def pred_candidates(q, perm, sums, bq, wmax):
+    # beam search where every query has its own beam width bq (H, n)
+    H_, n, DH_ = q.shape; hi = np.arange(H_)[:, None, None]
+    front = np.zeros((H_, n, 1), dtype=np.int64)
+    valid = np.ones((H_, n, 1), dtype=bool)
+    for lvl in range(1, D + 1):
+        ch = np.concatenate([2 * front, 2 * front + 1], -1)
+        cv = np.concatenate([valid, valid], -1)
+        U = sums[lvl][hi, ch]
+        sc = np.einsum('hnd,hnkd->hnk', q, U)
+        sc = np.where(cv, sc, -np.inf)
+        w = min(wmax, ch.shape[-1])
+        order = np.argsort(-sc, -1)[..., :w]
+        front = np.take_along_axis(ch, order, -1)
+        vo = np.take_along_axis(cv, order, -1)
+        valid = vo & (np.arange(w)[None, None, :] < bq[..., None])
+    pos = np.concatenate([2 * front, 2 * front + 1], -1)
+    pv = np.concatenate([valid, valid], -1)
+    cand = perm[hi, pos]
+    return np.where(pv, cand, np.arange(n)[None, :, None])
+
+_i = np.arange(N)
+STATIC = np.stack([np.zeros(N, int), np.full(N, N - 1), np.clip(_i - LOCAL, 0, N - 1), _i, np.clip(_i + LOCAL, 0, N - 1)], -1)
+
+# ---------- query-only need predictor ----------
+def feat_q(q):
+    H_, n, _ = q.shape
+    ln = np.log(np.linalg.norm(q, axis=-1, keepdims=True) + 1e-6)
+    oh = np.broadcast_to(np.eye(H_, dtype=np.float32)[:, None, :], (H_, n, H_))
+    return np.concatenate([q, ln, oh], -1).astype(np.float32)
+
+def fit(X, y):
+    mu = X.mean(0); sd = X.std(0) + 1e-6; Xs = ((X - mu) / sd).astype(np.float32)
+    ymu = float(y.mean()); ysd = float(y.std()) + 1e-6; ys = ((y - ymu) / ysd).astype(np.float32)
+    F = Xs.shape[1]
+    torch.manual_seed(0)
+    net = torch.nn.Sequential(torch.nn.Linear(F, 128), torch.nn.ReLU(), torch.nn.Linear(128, 64), torch.nn.ReLU(), torch.nn.Linear(64, 1))
+    opt = torch.optim.AdamW(net.parameters(), lr=3e-3, weight_decay=1e-4)
+    Xt = torch.from_numpy(Xs); yt = torch.from_numpy(ys)
+    for _ in range(300):
+        opt.zero_grad(); loss = ((net(Xt)[:, 0] - yt) ** 2).mean(); loss.backward(); opt.step()
+    net.eval()
+    return dict(mu=mu, sd=sd, net=net, ymu=ymu, ysd=ysd)
+
+def predict(mod, X):
+    Xs = ((X - mod['mu']) / mod['sd']).astype(np.float32)
+    with torch.no_grad(): p = mod['net'](torch.from_numpy(Xs))[:, 0].numpy()
+    return p * mod['ysd'] + mod['ymu']
+
+PRED = {}
+
+def sparse_attention(q, k, v, cfg, layer):
+    q, k, v = [x.transpose(1, 0, 2).astype(np.float32) for x in (q, k, v)]
+    H_, n, DH_ = q.shape; hi = np.arange(H_)[:, None, None]
+    S = np.einsum('hnd,hmd->hnm', q, k) / np.sqrt(DH_)
+    Pf = np.exp(S - S.max(-1, keepdims=True)); Pf /= Pf.sum(-1, keepdims=True)
+    full = Pf @ v
+    m = cfg['method']; extra = None
+    if m == 'collect':   # plain full attention output; record query features and true need (keys for 90% mass)
+        cum = np.cumsum(-np.sort(-Pf, -1), -1)
+        k90 = (cum < 0.90).sum(-1) + 1
+        XQ = feat_q(q); fo = full.transpose(1, 0, 2)
+        return fo, fo, 0.0, 0.0, (XQ.reshape(-1, XQ.shape[-1]), np.log(k90).reshape(-1).astype(np.float32))
+    if m == 'oracle':
+        cand = np.argsort(-S, -1)[..., :2 * cfg['beam']]
+    elif m == 'fixed':
+        k_idx = k.copy(); k_idx[:, [0, -1], :] = 0            # sinks out of the index (still always attended)
+        perm, sums = build_tree(k_idx)
+        cand = tree_candidates(q, perm, sums, cfg['beam'])
+    else:   # 'pred' or 'oraclecount': per-query branch count from the predictor, with a floor
+        X = feat_q(q)
+        pr = predict(PRED[layer], X.reshape(-1, X.shape[-1])).reshape(H_, n)
+        raw = np.round(cfg['c'] * np.exp(pr))
+        bq = np.clip(raw, cfg['floor'], WMAX).astype(np.int64)
+        extra = (float((raw < cfg['floor']).mean()), float(bq.mean()))
+        if m == 'pred':
+            k_idx = k.copy(); k_idx[:, [0, -1], :] = 0
+            perm, sums = build_tree(k_idx)
+            cand = pred_candidates(q, perm, sums, bq, WMAX)
+        else:   # true best keys, but with the predictor's branch counts (2 keys per branch)
+            order = np.argsort(-S, -1)[..., :2 * WMAX]
+            cand = np.where(np.arange(2 * WMAX)[None, None, :] < 2 * bq[..., None], order, np.arange(n)[None, :, None])
+    cand = np.concatenate([cand, np.broadcast_to(STATIC, (H_, n, 5))], -1)
+    cs = np.sort(cand, -1); dup = np.zeros(cs.shape, bool); dup[..., 1:] = cs[..., 1:] == cs[..., :-1]
+    s = np.einsum('hnd,hncd->hnc', q, k[hi, cs]) / np.sqrt(DH_); s[dup] = -np.inf
+    w = np.exp(s - s.max(-1, keepdims=True)); w /= w.sum(-1, keepdims=True)
+    out = np.einsum('hnc,hncd->hnd', w, v[hi, cs])
+    mass = (np.take_along_axis(Pf, cs, -1) * ~dup).sum(-1).mean()
+    return out.transpose(1, 0, 2), full.transpose(1, 0, 2), float(mass), float((~dup).sum(-1).mean()), extra
+
+from transformers import AutoTokenizer, BertForMaskedLM
+dev = 'cuda' if torch.cuda.is_available() else 'cpu'
+tok = AutoTokenizer.from_pretrained('bert-base-uncased')
+model = BertForMaskedLM.from_pretrained('bert-base-uncased', attn_implementation='eager').eval().to(dev)
+H = model.config.num_attention_heads; DH = model.config.hidden_size // H; NL = model.config.num_hidden_layers
+try:
+    from datasets import load_dataset
+    raw = load_dataset('wikitext', 'wikitext-2-raw-v1', split='test')['text']
+    text = ' '.join(t.strip() for t in raw if len(t) > 200)
+except Exception as e:
+    print('dataset failed, fallback text:', e)
+    text = ("The committee reviewed the proposal and, after a long discussion about funding, "
+            "timelines and the risks involved, decided to postpone the final vote until next spring. ") * 400
+ids = tok(text, add_special_tokens=False)['input_ids']
+
+# evaluation windows: identical to the earlier runs (same seed, same draw order)
+rng = np.random.default_rng(0)
+EVAL = []
+for _w in range(N_WINDOWS):
+    s_ = int(rng.integers(0, len(ids) - N))
+    p_ = rng.choice(np.arange(1, N - 1), int(MASK_FRAC * N), replace=False)
+    EVAL.append((s_, p_))
+# training windows: different seed, must not overlap any evaluation window or each other
+rng2 = np.random.default_rng(123)
+TRAIN = []
+while len(TRAIN) < N_TRAIN_WINDOWS:
+    s_ = int(rng2.integers(0, len(ids) - N))
+    p_ = rng2.choice(np.arange(1, N - 1), int(MASK_FRAC * N), replace=False)
+    if all(abs(s_ - e[0]) >= N for e in EVAL) and all(abs(s_ - t_[0]) >= N for t_ in TRAIN):
+        TRAIN.append((s_, p_))
+
+CFG = None
+lay = defaultdict(list); keys_used = defaultdict(list); keys_layer = defaultdict(list); mass_used = defaultdict(list)
+COLLECT = defaultdict(list); BQ = defaultdict(list)
+
+def make_hook(l):
+    def hook(m, args, kwargs, out):
+        if CFG is None: return None
+        hs = args[0] if args else kwargs['hidden_states']
+        with torch.no_grad():
+            q, k, v = [f(hs)[0].float().cpu().numpy().reshape(N, H, DH) for f in (m.query, m.key, m.value)]
+        sp, fu, mass, nk, extra = sparse_attention(q, k, v, CFG, l)
+        if CFG['method'] == 'collect':
+            COLLECT[l].append(extra)
+        else:
+            err = (np.linalg.norm(sp - fu, axis=-1) / (np.linalg.norm(fu, axis=-1) + 1e-9)).mean()
+            lay[(CFG['name'], l)].append(err); keys_used[CFG['name']].append(nk)
+            keys_layer[(CFG['name'], l)].append(nk); mass_used[CFG['name']].append(mass)
+            if extra is not None: BQ[CFG['name']].append(extra)
+        o0 = out[0] if isinstance(out, tuple) else out
+        new = torch.tensor(sp.reshape(1, N, H * DH), dtype=o0.dtype, device=o0.device)
+        return (new,) + tuple(out[1:]) if isinstance(out, tuple) else new
+    return hook
+for l in range(NL):
+    model.bert.encoder.layer[l].attention.self.register_forward_hook(make_hook(l), with_kwargs=True)
+
+def run(cfg, inp, pos, orig):
+    global CFG
+    CFG = cfg
+    with torch.no_grad(): lg = model(input_ids=inp).logits[0, pos]
+    CFG = None
+    return lg, torch.nn.functional.cross_entropy(lg, orig[0, pos], reduction='none').cpu().numpy()
+
+def make_inputs(s, pos):
+    seq = [tok.cls_token_id] + ids[s:s + N - 2] + [tok.sep_token_id]
+    orig = torch.tensor([seq], device=dev)
+    inp = orig.clone(); inp[0, pos] = tok.mask_token_id
+    return orig, inp
+
+# ---REPORT---
+def report():
+    L = []; P = L.append
+    full_tl = np.array(tokloss['FULL'])
+    P(f'windows done: {NW_DONE}/{N_WINDOWS}   masked tokens: {len(full_tl)}   N={N}   FULL attention MLM loss = {full_tl.mean():.3f}')
+    P('\nTable 1: loss increase vs full attention (+/- std error, each vs full), lower = better. Sorted by average keys.')
+    P('gain = PAIRED improvement over uniform fixed beams interpolated to the same key count (same tokens; positive = better, +/- is the paired std error).')
+    P('n/a = key count outside the fixed-beam range. mass = true attention mass captured.')
+    P('beam = average branches per query chosen by the predictor; lifted = fraction of queries the floor raised (for floor=1 it only counts round-to-zero cases).')
+    P('ORACLE-COUNTS uses the TRUE best keys with the predictor branch counts: it separates predictor error from tree routing error.')
+    fixed = sorted([(float(np.mean(keys_used[c['name']])), np.array(tokloss[c['name']])) for c in CONFIGS if c['method'] == 'fixed'], key=lambda x: x[0])
+    ks = [f[0] for f in fixed]
+    rows = []
+    for c in CONFIGS:
+        nm = c['name']; tl = np.array(tokloss[nm]); d = tl - full_tl; kk = float(np.mean(keys_used[nm]))
+        if c['method'] == 'fixed': g = '-'
+        elif kk < ks[0] - 0.05 or kk > ks[-1] + 0.05: g = 'n/a'
+        else:
+            j = min(max(int(np.searchsorted(ks, kk)), 1), len(ks) - 1)
+            (k0, ta), (k1, tb) = fixed[j - 1], fixed[j]
+            t = float(np.clip((kk - k0) / (k1 - k0), 0, 1))
+            gd = ((1 - t) * ta + t * tb) - tl
+            g = f'{gd.mean():+.2f}+/-{gd.std(ddof=1)/np.sqrt(len(gd)):.2f}'
+        bq = BQ.get(nm)
+        rows.append(dict(config=nm, keys=round(kk, 1), delta=f'{d.mean():+.2f}+/-{d.std(ddof=1)/np.sqrt(len(d)):.2f}', gain=g,
+                         mass=round(float(np.mean(mass_used[nm])), 3), top1=round(float(np.mean(agree[nm])), 3),
+                         beam=(round(float(np.mean([x[1] for x in bq])), 1) if bq else '-'),
+                         lifted=(round(float(np.mean([x[0] for x in bq])), 2) if bq else '-')))
+    P(pd.DataFrame(rows).sort_values('keys').to_string(index=False))
+    P('\nTable 2: where does each config spend its keys? avg distinct keys per layer')
+    C = pd.DataFrame({c['name']: {l: np.mean(keys_layer[(c['name'], l)]) for l in range(NL)} for c in CONFIGS}).T
+    P(C.round(1).to_string())
+    P('\nTable 3: per-layer output error vs full attention, lower = better')
+    E = pd.DataFrame({c['name']: {l: np.mean(lay[(c['name'], l)]) for l in range(NL)} for c in CONFIGS}).T
+    E['avg'] = E.mean(axis=1); P(E.round(2).to_string())
+    txt = '\n'.join(L)
+    open(os.path.join(OUT, 'results.txt'), 'w').write(txt)
+    return txt
+# ---END REPORT---
+
+pd.set_option('display.width', 250); pd.set_option('display.max_colwidth', 60)
+t0 = time.time()
+
+# ----- phase A: collect training data (plain full attention: query features + true need) -----
+for ti, (s, pos) in enumerate(TRAIN):
+    orig, inp = make_inputs(s, pos)
+    run(dict(name='COLLECT', method='collect'), inp, pos, orig)
+    print(f'train window {ti+1}/{N_TRAIN_WINDOWS} collected ({time.time()-t0:.0f}s)', flush=True)
+for l in range(NL):
+    XQ = np.concatenate([c[0] for c in COLLECT[l]]); y = np.concatenate([c[1] for c in COLLECT[l]])
+    PRED[l] = fit(XQ, y)
+    print(f'layer {l}: predictor trained on {len(y)} queries ({time.time()-t0:.0f}s)', flush=True)
+COLLECT.clear()
+
+# ----- phase B: held-out evaluation -----
+tokloss = defaultdict(list); agree = defaultdict(list)
+NW_DONE = 0
+for w, (s, pos) in enumerate(EVAL):
+    orig, inp = make_inputs(s, pos)
+    lg_full, tl_full = run(None, inp, pos, orig)
+    tokloss['FULL'] += tl_full.tolist()
+    print(f'window {w+1}: full-attention pass done', flush=True)
+    if w == 0:   # sanity: attending to ALL keys must reproduce full attention, and the hook must fire
+        lg_s, tl_s = run(dict(name='SANITY all-keys', method='oracle', beam=N // 2), inp, pos, orig)
+        assert len(keys_used['SANITY all-keys']) == NL, 'attention hook did not fire in every layer'
+        gap = float(np.abs(tl_s - tl_full).max()); print('SANITY max per-token loss gap vs full:', gap, flush=True)
+        assert gap < 1e-2, 'patched attention does not reproduce full attention: hook/output format problem'
+    for cfg in CONFIGS:
+        lg, tl = run(cfg, inp, pos, orig)
+        tokloss[cfg['name']] += tl.tolist()
+        agree[cfg['name']] += (lg.argmax(-1) == lg_full.argmax(-1)).float().cpu().tolist()
+        print(f"  w{w+1} {cfg['name']} ({time.time()-t0:.0f}s)", flush=True)
+    NW_DONE = w + 1
+    report()
+    print(f'window {w+1}/{N_WINDOWS} done ({time.time()-t0:.0f}s)', flush=True)
+
+print(report())
+print('ALL DONE', flush=True)
